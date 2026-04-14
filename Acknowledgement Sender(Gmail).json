@@ -1,0 +1,193 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=text:  {{ $json.text }}\nThis is the text extracted from email, your task is to summarise this email in 30-40 words.\nBe precise, do not hallucinate.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "0c6ab9db-4d3a-4b5e-bb53-11b003eb8522",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get many messages').item.json.from.value[0].address }}",
+        "subject": "=Acknowledgement: Hi,{{ $('Get many messages').item.json.from.value[0].name.toTitleCase() }} We got your mail.",
+        "message": "=<p>Dear {{ $('Get many messages').item.json.from.value[0].name.toTitleCase()}},</p>\n\n<p>Thank you for your email. I have received your message and will review the details carefully.</p>\n\n<p><strong>Some of the context of your email is:</strong><br>\n{{ $json.output }}\n</p>\n\n<p>If any additional information is required, I will get back to you. I appreciate your time and will respond as soon as possible.</p>\n\n<br>\n\n<p>Regards,<br>\n<b>Abhay Varshney</b><br>\nContact: 8445133380</p>\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        0
+      ],
+      "id": "ca743089-4ac7-4e71-bbb0-7f32500ff1cb",
+      "name": "Send a message",
+      "webhookId": "7dc756d6-3b67-46b1-9c43-3a0a5d573de0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UdSmtSnyhHmEtIV2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        192,
+        240
+      ],
+      "id": "601f6267-f443-4c1b-9d59-2c3137364173",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gf4FI6nDzEZZuiTC",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 1,
+        "simple": false,
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        0
+      ],
+      "id": "e66bf9a9-6202-4b5e-a610-04b33a44a8a4",
+      "name": "Get many messages",
+      "webhookId": "bc2ec147-7949-450a-80de-4b09eabf2418",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UdSmtSnyhHmEtIV2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "4afd6a8c-8b23-4bc3-a674-89d122e661d3",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Get many messages').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        976,
+        0
+      ],
+      "id": "a6fc7aeb-8f02-48fd-9d38-fa186d3f91ee",
+      "name": "Mark a message as read",
+      "webhookId": "e008aa98-8360-40a8-89bb-cebb122e7733",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UdSmtSnyhHmEtIV2",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "17bdcbc566707404d1160f69cfc4afe4eadd6638d6b02d7602a05d599f6ad803"
+  }
+}
